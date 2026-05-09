@@ -1,4 +1,4 @@
-# Arquitectura del Backend: Plataforma de Aprendizaje Colaborativo UNERG
+# Arquitectura del Backend: Plataforma de Aprendizaje Colaborativo AIS Lab
 
 ## 1. Infraestructura Base
 El backend estará sustentado íntegramente en **Supabase**, utilizando su ecosistema para cubrir la base de datos, autenticación, almacenamiento y tiempo real, eliminando la necesidad de gestionar servidores propios.

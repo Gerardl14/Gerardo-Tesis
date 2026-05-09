@@ -1,4 +1,4 @@
-# Arquitectura del Frontend: Plataforma de Aprendizaje Colaborativo UNERG
+# Arquitectura del Frontend: Plataforma de Aprendizaje Colaborativo AIS Lab
 
 ## 1. Tecnologías Principales
 * **Framework Core:** Next.js (React). Ideal para aplicaciones robustas, permite Server-Side Rendering (SSR) y optimización de rutas, lo cual es útil si la plataforma crece y requiere buen rendimiento.

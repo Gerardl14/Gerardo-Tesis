@@ -1,0 +1,17 @@
+name: Supabase Keep Alive
+
+on:
+  schedule:
+    # Se ejecuta todos los martes y viernes a las 12:00 UTC (frecuencia óptima de ~3 días para evitar la pausa de 7 días)
+    - cron: '0 12 * * 2,5'
+  workflow_dispatch: # Permite disparar la acción manualmente desde la pestaña Actions en GitHub
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/forum_threads?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
