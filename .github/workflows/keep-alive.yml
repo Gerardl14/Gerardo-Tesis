@@ -1,6 +1,9 @@
 name: Supabase Keep Alive
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # Se ejecuta todos los martes y viernes a las 12:00 UTC (frecuencia óptima de ~3 días para evitar la pausa de 7 días)
     - cron: '0 12 * * 2,5'
