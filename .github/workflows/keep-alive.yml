@@ -30,12 +30,3 @@ jobs:
           curl --fail -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/forum_threads?select=id&limit=1" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
-
-      - name: Ping Supabase REST API (Escritura)
-        run: |
-          curl --fail -i -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_log" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json" \
-            -H "Prefer: return=minimal" \
-            -d '{"status": "github-actions"}'
