@@ -13,65 +13,79 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    env:
-      SB_URL: ${{ secrets.SUPABASE_URL }}
-      SB_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
       - name: Check Secrets
         run: |
-          if [ -z "$SB_URL" ]; then
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
             echo "::error::La variable de secreto SUPABASE_URL no está configurada en GitHub."
             exit 1
           fi
-          if [ -z "$SB_KEY" ]; then
+          if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
             echo "::error::La variable de secreto SUPABASE_ANON_KEY no está configurada en GitHub."
             exit 1
           fi
-          echo "✅ Secretos configurados correctamente"
+          echo "Secretos configurados correctamente"
 
       - name: Ping Supabase - Lectura
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           echo "=== Realizando consulta de lectura ==="
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${SB_URL}/rest/v1/keep_alive_log?select=id&limit=3" \
-            -H "apikey: ${SB_KEY}" \
-            -H "Authorization: Bearer ${SB_KEY}")
-          echo "HTTP Status: $HTTP_CODE"
-          if [ "$HTTP_CODE" -ne 200 ]; then
-            echo "::error::Lectura falló con código $HTTP_CODE"
+          response=$(curl -s -w "\n%{http_code}" \
+            "$SUPABASE_URL/rest/v1/keep_alive_log?select=id&limit=3" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Lectura fallo con codigo $http_code"
             exit 1
           fi
-          echo "✅ Lectura exitosa"
+          echo "Lectura exitosa"
 
       - name: Ping Supabase - Escritura
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "=== Realizando operación de escritura ==="
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST "${SB_URL}/rest/v1/keep_alive_log" \
-            -H "apikey: ${SB_KEY}" \
-            -H "Authorization: Bearer ${SB_KEY}" \
+          echo "=== Realizando operacion de escritura ==="
+          response=$(curl -s -w "\n%{http_code}" \
+            -X POST "$SUPABASE_URL/rest/v1/keep_alive_log" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
             -H "Content-Type: application/json" \
             -H "Prefer: return=minimal" \
             -d '{"status": "github-actions"}')
-          echo "HTTP Status: $HTTP_CODE"
-          if [ "$HTTP_CODE" -ne 201 ]; then
-            echo "::error::Escritura falló con código $HTTP_CODE"
+          http_code=$(echo "$response" | tail -n1)
+          echo "HTTP Status: $http_code"
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Escritura fallo con codigo $http_code"
             exit 1
           fi
-          echo "✅ Escritura exitosa"
+          echo "Escritura exitosa"
 
       - name: Verificar tablas principales
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          echo "=== Verificando actividad en múltiples tablas ==="
-          TABLES="profiles repositories grades forum_threads"
-          for table in $TABLES; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-              "${SB_URL}/rest/v1/${table}?select=id&limit=1" \
-              -H "apikey: ${SB_KEY}" \
-              -H "Authorization: Bearer ${SB_KEY}")
-            echo "  $table -> HTTP $HTTP_CODE"
-            if [ "$HTTP_CODE" -ne 200 ]; then
-              echo "::warning::Tabla $table respondió con código $HTTP_CODE"
+          echo "=== Verificando actividad en multiples tablas ==="
+          failed=0
+          for table in profiles repositories grades forum_threads; do
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+              "$SUPABASE_URL/rest/v1/$table?select=id&limit=1" \
+              -H "apikey: $SUPABASE_ANON_KEY" \
+              -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+            echo "  $table -> HTTP $http_code"
+            if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+              echo "::warning::Tabla $table respondio con codigo $http_code"
+              failed=1
             fi
           done
-          echo "✅ Verificación de tablas completada"
+          if [ "$failed" -eq 1 ]; then
+            echo "::warning::Algunas tablas no respondieron correctamente"
+          fi
+          echo "Verificacion de tablas completada"
