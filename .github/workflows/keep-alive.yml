@@ -5,8 +5,9 @@ on:
     branches:
       - main
   schedule:
-    # Se ejecuta todos los martes y viernes a las 12:00 UTC (frecuencia óptima de ~3 días para evitar la pausa de 7 días)
-    - cron: '0 12 * * 2,5'
+    # Se ejecuta TODOS LOS DÍAS a las 08:00 y 20:00 UTC para garantizar actividad constante
+    - cron: '0 8 * * *'
+    - cron: '0 20 * * *'
   workflow_dispatch: # Permite disparar la acción manualmente desde la pestaña Actions en GitHub
 
 jobs:
@@ -24,8 +25,35 @@ jobs:
             exit 1
           fi
 
-      - name: Ping Supabase REST API
+      - name: Ping Supabase REST API (Lectura)
         run: |
-          curl --fail -i -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/forum_threads?select=id&limit=1" \
+          echo "=== Realizando consulta de lectura ==="
+          curl --fail -s -o /dev/null -w "HTTP Status: %{http_code}\n" \
+            -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_log?select=id,executed_at,status&order=executed_at.desc&limit=5" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          echo "✅ Lectura exitosa"
+
+      - name: Ping Supabase REST API (Escritura)
+        run: |
+          echo "=== Realizando operación de escritura ==="
+          curl --fail -s -o /dev/null -w "HTTP Status: %{http_code}\n" \
+            -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/keep_alive_log" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d '{"status": "github-actions"}'
+          echo "✅ Escritura exitosa"
+
+      - name: Verificar múltiples tablas
+        run: |
+          echo "=== Verificando actividad en múltiples tablas ==="
+          for table in profiles repositories grades forum_threads; do
+            echo "Consultando tabla: $table"
+            curl --fail -s -o /dev/null -w "  $table -> HTTP %{http_code}\n" \
+              -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/${table}?select=count&limit=1" \
+              -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+              -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          done
+          echo "✅ Todas las tablas respondieron correctamente"
